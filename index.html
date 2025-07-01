@@ -81,7 +81,7 @@
     const entrada = document.getElementById('inputZPL').value.trim();
     if (!entrada) return;
 
-    const salida = escalarZPLConSeparacion(entrada);
+    const salida = escalarZPL(entrada);
     document.getElementById('outputZPL').value = salida;
     document.getElementById('btnCopiar').disabled = false;
   });
