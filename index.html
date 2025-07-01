@@ -5,11 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Generador de Etiquetas ZPL</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/zebra-js@1.0.0/dist/zebra.min.js"></script>
   <style>
     body { font-family: Arial, sans-serif; margin: 1rem; }
     textarea { width: 100%; height: 200px; font-family: monospace; font-size: 14px; }
     button { margin-top: 10px; margin-right: 10px; padding: 10px 15px; font-size: 16px; }
     #pdfViewer { width: 100%; height: 500px; border: 1px solid #ccc; margin-top: 15px; }
+    .label-container { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px; }
+    .label-preview { border: 1px solid #ddd; padding: 5px; }
   </style>
 </head>
 <body>
@@ -23,6 +26,7 @@
 <button id="btnGenerar">Procesar y mostrar PDF</button>
 <button id="btnDescargar" disabled>Descargar PDF</button>
 
+<div id="labelContainer" class="label-container"></div>
 <iframe id="pdfViewer"></iframe>
 
 <script>
@@ -30,46 +34,99 @@
   let pdfDoc = null; // guardamos el pdf generado
   let pdfBlobUrl = null;
 
-  document.getElementById('btnGenerar').addEventListener('click', () => {
+  // Función para procesar ZPL y generar imagen
+  async function processZPL(zplCode, options = {}) {
+    try {
+      // Dividir en múltiples etiquetas si hay múltiples ^XA...^XZ
+      const labels = zplCode.split(/^XA/m).filter(part => part.trim().length > 0);
+      
+      const results = [];
+      
+      for (let i = 0; i < labels.length; i++) {
+        const fullZpl = `^XA${labels[i]}`.trim();
+        
+        // Configuración para tamaño 4x6 pulgadas (288x432 puntos)
+        const config = {
+          ...options,
+          targetSize: { width: 4, height: 6 }, // en pulgadas
+          dpi: 203, // resolución estándar para impresoras Zebra
+          scale: 0.8 // factor de escala para ajustar al tamaño
+        };
+        
+        // Usar la librería zebra para renderizar el ZPL
+        const result = await zebra.print(fullZpl, config);
+        results.push(result);
+      }
+      
+      return results;
+    } catch (error) {
+      console.error("Error procesando ZPL:", error);
+      throw error;
+    }
+  }
+
+  document.getElementById('btnGenerar').addEventListener('click', async () => {
     const zplCode = document.getElementById('inputZPL').value.trim();
     if (!zplCode) {
       alert('Por favor ingresa el código ZPL');
       return;
     }
 
-    // Crear documento PDF
-    pdfDoc = new jsPDF({
-      orientation: "portrait",
-      unit: "pt",
-      format: [288, 432], // 4x6 pulgadas en pts (72 pts = 1 pulgada)
-    });
+    try {
+      // Procesar el ZPL
+      const labelImages = await processZPL(zplCode);
+      
+      // Limpiar contenedor previo
+      const container = document.getElementById('labelContainer');
+      container.innerHTML = '';
+      
+      // Crear documento PDF (4x6 pulgadas = 288x432 puntos)
+      pdfDoc = new jsPDF({
+        orientation: "portrait",
+        unit: "pt",
+        format: [288, 432],
+      });
+      
+      // Agregar cada etiqueta al PDF y mostrarla en el contenedor
+      labelImages.forEach((imgData, index) => {
+        // Agregar al PDF
+        if (index > 0) {
+          pdfDoc.addPage([288, 432], "portrait");
+        }
+        pdfDoc.addImage(imgData, 'PNG', 0, 0, 288, 432);
+        
+        // Mostrar previsualización en el contenedor
+        const img = document.createElement('img');
+        img.src = imgData;
+        img.style.maxWidth = '200px';
+        img.style.height = 'auto';
+        
+        const div = document.createElement('div');
+        div.className = 'label-preview';
+        div.innerHTML = `<p>Etiqueta ${index + 1}</p>`;
+        div.appendChild(img);
+        container.appendChild(div);
+      });
+      
+      // Crear Blob y URL para mostrar en iframe
+      if (pdfBlobUrl) URL.revokeObjectURL(pdfBlobUrl);
+      const pdfBlob = pdfDoc.output("blob");
+      pdfBlobUrl = URL.createObjectURL(pdfBlob);
 
-    const margin = 10;
-    const lineHeight = 14;
-    const maxWidth = 288 - 2 * margin;
+      // Mostrar en iframe
+      document.getElementById('pdfViewer').src = pdfBlobUrl;
 
-    // Dividir texto en líneas que entren
-    const lines = pdfDoc.splitTextToSize(zplCode, maxWidth);
-    
-    pdfDoc.setFont("courier", "normal");
-    pdfDoc.setFontSize(10);
-    pdfDoc.text(lines, margin, margin + lineHeight);
-
-    // Crear Blob y URL para mostrar en iframe
-    if (pdfBlobUrl) URL.revokeObjectURL(pdfBlobUrl);
-    const pdfBlob = pdfDoc.output("blob");
-    pdfBlobUrl = URL.createObjectURL(pdfBlob);
-
-    // Mostrar en iframe
-    document.getElementById('pdfViewer').src = pdfBlobUrl;
-
-    // Habilitar botón descargar
-    document.getElementById('btnDescargar').disabled = false;
+      // Habilitar botón descargar
+      document.getElementById('btnDescargar').disabled = false;
+      
+    } catch (error) {
+      console.error(error);
+      alert('Error al procesar el código ZPL: ' + error.message);
+    }
   });
 
   document.getElementById('btnDescargar').addEventListener('click', () => {
     if (!pdfDoc) return alert("Primero genera el PDF");
-
     pdfDoc.save("etiqueta.pdf");
   });
 </script>
