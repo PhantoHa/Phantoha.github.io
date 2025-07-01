@@ -1,1 +1,78 @@
-Hola mundo
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Generador de Etiquetas ZPL</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 1rem; }
+    textarea { width: 100%; height: 200px; font-family: monospace; font-size: 14px; }
+    button { margin-top: 10px; margin-right: 10px; padding: 10px 15px; font-size: 16px; }
+    #pdfViewer { width: 100%; height: 500px; border: 1px solid #ccc; margin-top: 15px; }
+  </style>
+</head>
+<body>
+
+<h1>Generador de Etiquetas ZPL</h1>
+
+<textarea id="inputZPL" placeholder="Pega aquí el código ZPL o XML"></textarea>
+
+<br/>
+
+<button id="btnGenerar">Procesar y mostrar PDF</button>
+<button id="btnDescargar" disabled>Descargar PDF</button>
+
+<iframe id="pdfViewer"></iframe>
+
+<script>
+  const { jsPDF } = window.jspdf;
+  let pdfDoc = null; // guardamos el pdf generado
+  let pdfBlobUrl = null;
+
+  document.getElementById('btnGenerar').addEventListener('click', () => {
+    const zplCode = document.getElementById('inputZPL').value.trim();
+    if (!zplCode) {
+      alert('Por favor ingresa el código ZPL');
+      return;
+    }
+
+    // Crear documento PDF
+    pdfDoc = new jsPDF({
+      orientation: "portrait",
+      unit: "pt",
+      format: [288, 432], // 4x6 pulgadas en pts (72 pts = 1 pulgada)
+    });
+
+    const margin = 10;
+    const lineHeight = 14;
+    const maxWidth = 288 - 2 * margin;
+
+    // Dividir texto en líneas que entren
+    const lines = pdfDoc.splitTextToSize(zplCode, maxWidth);
+    
+    pdfDoc.setFont("courier", "normal");
+    pdfDoc.setFontSize(10);
+    pdfDoc.text(lines, margin, margin + lineHeight);
+
+    // Crear Blob y URL para mostrar en iframe
+    if (pdfBlobUrl) URL.revokeObjectURL(pdfBlobUrl);
+    const pdfBlob = pdfDoc.output("blob");
+    pdfBlobUrl = URL.createObjectURL(pdfBlob);
+
+    // Mostrar en iframe
+    document.getElementById('pdfViewer').src = pdfBlobUrl;
+
+    // Habilitar botón descargar
+    document.getElementById('btnDescargar').disabled = false;
+  });
+
+  document.getElementById('btnDescargar').addEventListener('click', () => {
+    if (!pdfDoc) return alert("Primero genera el PDF");
+
+    pdfDoc.save("etiqueta.pdf");
+  });
+</script>
+
+</body>
+</html>
