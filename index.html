@@ -30,7 +30,6 @@
 
 <script>
   let imageUrl = null;
-  // ¡CAMBIO AQUÍ! Usar HTTPS para la URL de Labelary
   const LABELARY_API_URL = 'https://api.labelary.com/v1/printers/8dpmm/labels/4x6/'; 
 
   document.getElementById('btnGenerar').addEventListener('click', async () => {
@@ -47,13 +46,19 @@
     document.getElementById('btnDescargar').disabled = true;
 
     try {
+        // Preparar los datos como x-www-form-urlencoded
+        // El contenido ZPL va como valor de un parámetro llamado 'zpl' (verificado con la doc de Labelary)
+        const params = new URLSearchParams();
+        params.append('zpl', zplCode); // Agregamos el ZPL bajo el nombre de parámetro 'zpl'
+
       const response = await fetch(LABELARY_API_URL, {
         method: 'POST',
         headers: {
-          'Content-Type': 'text/plain',
+          // ¡CAMBIO AQUÍ! Nuevo Content-Type esperado por Labelary
+          'Content-Type': 'application/x-www-form-urlencoded', 
           'Accept': 'image/png' 
         },
-        body: zplCode,
+        body: params.toString(), // Enviamos los parámetros como string url-encoded
       });
 
       if (!response.ok) {
