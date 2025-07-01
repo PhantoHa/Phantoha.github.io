@@ -23,59 +23,52 @@
 
 <script>
 // Función para escalar etiquetas ZPL de 4x8 pulgadas a 4x6 pulgadas
-  function escalarZPL(zpl) {
-    const escalaX = 1.0;  // No se escala en X
-    const escalaY = 0.75; // Escalado vertical para pasar de 8 a 6 pulgadas
-    const nuevoLH = 67;
-  
-    // Ajustar el margen ^LH
-    zpl = zpl.replace(/^(\^LH)(\d+),(\d+)/m, (_, cmd, x, y) => {
-      return `^LH${x},${nuevoLH}`;
-    });
-  
-    // Escalar coordenadas de ^FO
-    zpl = zpl.replace(/\^FO(\d+),(\d+)/g, (_, x, y) => {
-      const nuevoX = Math.round(parseInt(x) * escalaX);
-      const nuevoY = Math.round(parseInt(y) * escalaY);
-      return `^FO${nuevoX},${nuevoY}`;
-    });
-  
-    // Escalar tamaños de fuente ^A0N,h,w
-    zpl = zpl.replace(/\^A0N,(\d+),(\d+)/g, (_, h, w) => {
-      const nuevoH = Math.max(16, Math.round(parseInt(h) * escalaY));
-      const nuevoW = Math.max(16, Math.round(parseInt(w) * escalaX));
-      return `^A0N,${nuevoH},${nuevoW}`;
-    });
-  
-    // Escalar ^FB ancho de caja de texto
-    zpl = zpl.replace(/\^FB(\d+),(\d+),(\-?\d+),([LRJ]),?/g, (_, w, l, s, a) => {
-      const nuevoW = Math.round(parseInt(w) * escalaX);
-      return `^FB${nuevoW},${l},${s},${a}`;
-    });
-  
-    // Escalar gráficos de caja ^GB ancho, alto, grosor
-    zpl = zpl.replace(/\^GB(\d+),(\d+),(\d+)/g, (_, w, h, t) => {
-      const nuevoW = Math.round(parseInt(w) * escalaX);
-      const nuevoH = Math.round(parseInt(h) * escalaY);
-      const nuevoT = Math.max(1, Math.round(parseInt(t) * escalaY));
-      return `^GB${nuevoW},${nuevoH},${nuevoT}`;
-    });
-  
-    // Escalar código de barras: ^BY ancho, espacio, altura
-    zpl = zpl.replace(/\^BY(\d+),(\d+),(\d+)/g, (_, m, r, h) => {
-      const nuevaH = Math.round(parseInt(h) * escalaY);
-      return `^BY${m},${r},${nuevaH}`;
-    });
-  
-    // Reducir altura del código de barras ^BCN (segunda parte del barcode)
-    zpl = zpl.replace(/\^BCN,(\d+),N,N,N/g, (_, altura) => {
-      const nuevaAltura = Math.round(parseInt(altura) * escalaY);
-      return `^BCN,${nuevaAltura},N,N,N`;
-    });
-  
-    return zpl;
-  }
+function escalarZPL(zpl) {
+  const escalaX = 1.0;  // No se escala en X
+  const escalaY = 0.75; // Escalado vertical para pasar de 8 a 6 pulgadas
+  const nuevoLH = 67;
 
+  // Ajustar el margen ^LH
+  zpl = zpl.replace(/^(\^LH)(\d+),(\d+)/m, (_, cmd, x, y) => {
+    return ^LH${x},${nuevoLH};
+  });
+
+  // Escalar coordenadas de ^FO
+  zpl = zpl.replace(/\^FO(\d+),(\d+)/g, (_, x, y) => {
+    const nuevoX = Math.round(parseInt(x) * escalaX);
+    const nuevoY = Math.round(parseInt(y) * escalaY);
+    return ^FO${nuevoX},${nuevoY};
+  });
+
+  // Escalar tamaños de fuente ^A0N,h,w
+  zpl = zpl.replace(/\^A0N,(\d+),(\d+)/g, (_, h, w) => {
+    const nuevoH = Math.max(16, Math.round(parseInt(h) * escalaY));
+    const nuevoW = Math.max(16, Math.round(parseInt(w) * escalaX));
+    return ^A0N,${nuevoH},${nuevoW};
+  });
+
+  // Escalar ^FB ancho de caja de texto
+  zpl = zpl.replace(/\^FB(\d+),(\d+),(\-?\d+),([LRJ]),?/g, (_, w, l, s, a) => {
+    const nuevoW = Math.round(parseInt(w) * escalaX);
+    return ^FB${nuevoW},${l},${s},${a};
+  });
+
+  // Escalar gráficos de caja ^GB ancho, alto, grosor
+  zpl = zpl.replace(/\^GB(\d+),(\d+),(\d+)/g, (_, w, h, t) => {
+    const nuevoW = Math.round(parseInt(w) * escalaX);
+    const nuevoH = Math.round(parseInt(h) * escalaY);
+    const nuevoT = Math.max(1, Math.round(parseInt(t) * escalaY));
+    return ^GB${nuevoW},${nuevoH},${nuevoT};
+  });
+
+  // Escalar código de barras ^BY2,2,1 => solo el ancho final
+  zpl = zpl.replace(/\^BY(\d+),(\d+),(\d+)/g, (_, m, r, h) => {
+    const nuevaH = Math.round(parseInt(h) * escalaY);
+    return ^BY${m},${r},${nuevaH};
+  });
+
+  return zpl;
+}
 
   document.getElementById('btnConvertir').addEventListener('click', () => {
     const entrada = document.getElementById('inputZPL').value.trim();
