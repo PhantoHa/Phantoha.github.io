@@ -22,49 +22,35 @@
 <textarea id="outputZPL" placeholder="Aquí verás el código convertido a 4x6..." readonly></textarea>
 
 <script>
-  function convertirZPL4x8a4x6(zpl) {
-    const escalaY = 0.65;
-
-    // Escalar coordenadas Y en ^FOx,y
-    zpl = zpl.replace(/\^FO(\d+),(\d+)/g, (_, x, y) => {
-      const nuevoY = Math.round(parseInt(y) * escalaY);
-      return `^FO${x},${nuevoY}`;
-    });
-
-    // Escalar fuente en ^A0N,w,h
-    zpl = zpl.replace(/\^A0N,(\d+),(\d+)/g, (_, w, h) => {
-      const nuevoW = Math.round(parseInt(w) * escalaY);
-      const nuevoH = Math.round(parseInt(h) * escalaY);
-      return `^A0N,${nuevoW},${nuevoH}`;
-    });
-
-    // Escalar ancho de ^FB
-    zpl = zpl.replace(/\^FB(\d+),/g, (_, ancho) => {
-      const nuevoAncho = Math.round(parseInt(ancho) * escalaY);
-      return `^FB${nuevoAncho},`;
-    });
-
-    // Escalar altura y grosor de rectángulos ^GBw,h,t
-    zpl = zpl.replace(/\^GB(\d+),(\d+),(\d+)/g, (_, w, h, t) => {
-      const nuevoH = Math.round(parseInt(h) * escalaY);
-      const nuevoT = Math.max(1, Math.round(parseInt(t) * escalaY));
-      return `^GB${w},${nuevoH},${nuevoT}`;
-    });
-
-    // Reducir el margen superior en ^LHx,y
-    zpl = zpl.replace(/\^LH(\d+),(\d+)/g, (_, x, y) => {
-      const nuevoY = Math.max(0, Math.round(parseInt(y) * 0.5)); // Reduce más el margen
-      return `^LH${x},${nuevoY}`;
-    });
-
-    return zpl;
+// Función para escalar etiquetas ZPL de 4x8 pulgadas a 4x6 pulgadas
+  function convertirZPL_4x8_a_4x6(zplOriginal) {
+    const escalaX = 0.75; // 6 / 8 pulgadas
+    const escalaY = 0.75; // Mantener igual para simetría
+  
+    const regexFO = /^\^FO(\d+),(\d+)/gm;
+    const regexFB = /^\^FB(\d+),/gm;
+    const regexGB = /^\^GB(\d+),(\d+),(\d+)/gm;
+    const regexLH = /^\^LH(\d+),(\d+)/gm;
+  
+    let zplModificado = zplOriginal
+      // Escalar posiciones ^FO
+      .replace(regexFO, (_, x, y) => `^FO${Math.round(parseInt(x) * escalaX)},${Math.round(parseInt(y) * escalaY)}`)
+      // Escalar anchos de ^FB
+      .replace(regexFB, (_, width) => `^FB${Math.round(parseInt(width) * escalaX)},`)
+      // Escalar dimensiones de ^GB
+      .replace(regexGB, (_, w, h, b) => `^GB${Math.round(w * escalaX)},${Math.round(h * escalaY)},${b}`)
+      // Escalar offset de encabezado ^LH
+      .replace(regexLH, (_, x, y) => `^LH${Math.round(x * escalaX)},${Math.round(y * escalaY)}`);
+  
+    return zplModificado;
   }
+
 
   document.getElementById('btnConvertir').addEventListener('click', () => {
     const entrada = document.getElementById('inputZPL').value.trim();
     if (!entrada) return;
 
-    const salida = convertirZPL4x8a4x6(entrada);
+    const salida = convertirZPL_4x8_a_4x6(entrada);
     document.getElementById('outputZPL').value = salida;
     document.getElementById('btnCopiar').disabled = false;
   });
