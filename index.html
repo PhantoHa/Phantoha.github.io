@@ -2,54 +2,60 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Convertir PDF de 4x8 a 4x6</title>
+  <title>ZPL a PDF 4x6</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
   <style>
-    body { font-family: sans-serif; margin: 20px; }
-    canvas { display: none; }
+    body { font-family: Arial, sans-serif; margin: 1rem; }
+    textarea { width: 100%; height: 200px; font-family: monospace; font-size: 14px; }
+    button { margin: 10px 5px; padding: 10px; }
   </style>
 </head>
 <body>
-  <h1>Convertir PDF de 4x8 a 4x6 pulgadas</h1>
-  <input type="file" id="pdfFile" accept="application/pdf" />
-  <button id="btnProcesar">Procesar PDF</button>
-  <a id="descargar" style="display:none;" download="pdf-4x6.pdf">Descargar PDF 4x6</a>
+  <h1>Convertir ZPL a PDF 4x6</h1>
+
+  <textarea id="zplInput" placeholder="Pega aquí tu código ZPL..."></textarea><br>
+  <button id="btnGenerar">Generar PDF desde ZPL</button>
+  <a id="descargar" style="display:none;" download="zpl-4x6.pdf">Descargar PDF 4x6</a>
 
   <script>
     const DPI = 300;
-    const PULGADA = 72; // 1 pulgada en puntos PDF-lib
+    const PULGADA = 72;
     const widthInPoints = 4 * PULGADA;
     const heightInPoints = 6 * PULGADA;
 
-    document.getElementById("btnProcesar").addEventListener("click", async () => {
-      const file = document.getElementById("pdfFile").files[0];
-      if (!file) return alert("Sube un archivo PDF primero.");
+    async function enviarZPLaLabelary(zpl) {
+      const response = await fetch("https://api.labelary.com/v1/printers/8dpmm/labels/4x8/0/", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: zpl
+      });
 
-      const arrayBuffer = await file.arrayBuffer();
+      if (!response.ok) throw new Error("Error al comunicarse con Labelary");
+
+      return await response.blob(); // PDF blob
+    }
+
+    async function convertirPDFa4x6(blobPDF) {
+      const arrayBuffer = await blobPDF.arrayBuffer();
       const pdfjsLib = window['pdfjs-dist/build/pdf'];
       pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
 
       const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-
       const pdfDoc = await PDFLib.PDFDocument.create();
 
       for (let i = 0; i < pdf.numPages; i++) {
         const page = await pdf.getPage(i + 1);
-        const viewport = page.getViewport({ scale: 2 }); // Escalar para buena calidad
+        const viewport = page.getViewport({ scale: 2 });
 
-        // Crear canvas temporal para renderizar la página
         const canvas = document.createElement("canvas");
         canvas.width = viewport.width;
         canvas.height = viewport.height;
         const context = canvas.getContext("2d");
-
         await page.render({ canvasContext: context, viewport }).promise;
 
-        // Convertir canvas a PNG
         const blob = await new Promise(res => canvas.toBlob(res, "image/png"));
         const imgBytes = await blob.arrayBuffer();
-
         const imgEmbed = await pdfDoc.embedPng(imgBytes);
         const scaledDims = imgEmbed.scaleToFit(widthInPoints, heightInPoints);
 
@@ -62,14 +68,27 @@
         });
       }
 
-      const pdfBytes = await pdfDoc.save();
-      const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-      const url = URL.createObjectURL(blob);
+      const newPDFBytes = await pdfDoc.save();
+      return new Blob([newPDFBytes], { type: 'application/pdf' });
+    }
 
-      const link = document.getElementById("descargar");
-      link.href = url;
-      link.style.display = "inline-block";
-      link.textContent = "Descargar PDF 4x6";
+    document.getElementById("btnGenerar").addEventListener("click", async () => {
+      const zpl = document.getElementById("zplInput").value.trim();
+      if (!zpl) return alert("Escribe algún código ZPL primero.");
+
+      try {
+        const pdfOriginal = await enviarZPLaLabelary(zpl);
+        const pdfConvertido = await convertirPDFa4x6(pdfOriginal);
+
+        const url = URL.createObjectURL(pdfConvertido);
+        const link = document.getElementById("descargar");
+        link.href = url;
+        link.style.display = "inline-block";
+        link.textContent = "Descargar PDF 4x6";
+      } catch (err) {
+        console.error(err);
+        alert("Ocurrió un error: " + err.message);
+      }
     });
   </script>
 </body>
