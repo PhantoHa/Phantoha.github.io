@@ -30,7 +30,8 @@
 
 <script>
   let imageUrl = null;
-  const LABELARY_API_URL = 'http://api.labelary.com/v1/printers/8dpmm/labels/4x6/'; // 8 puntos/mm, 4x6 pulgadas
+  // ¡CAMBIO AQUÍ! Usar HTTPS para la URL de Labelary
+  const LABELARY_API_URL = 'https://api.labelary.com/v1/printers/8dpmm/labels/4x6/'; 
 
   document.getElementById('btnGenerar').addEventListener('click', async () => {
     const zplCode = document.getElementById('inputZPL').value.trim();
@@ -50,7 +51,7 @@
         method: 'POST',
         headers: {
           'Content-Type': 'text/plain',
-          'Accept': 'image/png' // Pedimos una imagen PNG
+          'Accept': 'image/png' 
         },
         body: zplCode,
       });
