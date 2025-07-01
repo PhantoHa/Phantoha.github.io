@@ -23,27 +23,39 @@
 
 <script>
 // Función para escalar etiquetas ZPL de 4x8 pulgadas a 4x6 pulgadas
-  function convertirZPL_4x8_a_4x6(zplOriginal) {
-    const escalaX = 0.75; // 6 / 8 pulgadas
-    const escalaY = 0.75; // Mantener igual para simetría
-  
-    const regexFO = /^\^FO(\d+),(\d+)/gm;
-    const regexFB = /^\^FB(\d+),/gm;
-    const regexGB = /^\^GB(\d+),(\d+),(\d+)/gm;
-    const regexLH = /^\^LH(\d+),(\d+)/gm;
-  
-    let zplModificado = zplOriginal
-      // Escalar posiciones ^FO
-      .replace(regexFO, (_, x, y) => `^FO${Math.round(parseInt(x) * escalaX)},${Math.round(parseInt(y) * escalaY)}`)
-      // Escalar anchos de ^FB
-      .replace(regexFB, (_, width) => `^FB${Math.round(parseInt(width) * escalaX)},`)
-      // Escalar dimensiones de ^GB
-      .replace(regexGB, (_, w, h, b) => `^GB${Math.round(w * escalaX)},${Math.round(h * escalaY)},${b}`)
-      // Escalar offset de encabezado ^LH
-      .replace(regexLH, (_, x, y) => `^LH${Math.round(x * escalaX)},${Math.round(y * escalaY)}`);
-  
-    return zplModificado;
-  }
+function convertirZPL_4x8_a_4x6(zpl) {
+  const factorEscala = 0.75;
+
+  return zpl.split('\n').map(linea => {
+    // ^LHx,y → escalar y
+    linea = linea.replace(/^(\^LH\d+,)(\d+)/, (m, x, y) => x + Math.round(y * factorEscala));
+
+    // ^FOx,y → escalar y
+    linea = linea.replace(/(\^FO\d+,)(\d+)/g, (m, x, y) => x + Math.round(y * factorEscala));
+
+    // ^A0N,h,w → escalar alto y ancho de fuente
+    linea = linea.replace(/(\^A0N,)(\d+),(\d+)/g, (m, p, h, w) =>
+      `${p}${Math.round(h * factorEscala)},${Math.round(w * factorEscala)}`
+    );
+
+    // ^FBw,n,s,a,h → escalar altura si existe
+    linea = linea.replace(/(\^FB\d+,\d+,\d+,[LCR],)(\d+)/g, (m, pre, h) =>
+      pre + Math.round(h * factorEscala)
+    );
+
+    // ^GBw,h,t → escalar altura y grosor
+    linea = linea.replace(/(\^GB\d+,)(\d+),(\d+)/g, (m, w, h, t) =>
+      `${w}${Math.round(h * factorEscala)},${Math.max(1, Math.round(t * factorEscala))}`
+    );
+
+    // ^BYm,s,w → escalar altura del código de barras
+    linea = linea.replace(/(\^BY\d*,\d*,)(\d+)/g, (m, pre, h) =>
+      `${pre}${Math.round(h * factorEscala)}`
+    );
+
+    return linea;
+  }).join('\n');
+}
 
 
   document.getElementById('btnConvertir').addEventListener('click', () => {
