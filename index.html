@@ -2,145 +2,75 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Convertir ZPL de 4x8 a 4x6</title>
+  <title>Convertir PDF de 4x8 a 4x6</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; margin: 1rem; }
-    textarea { width: 100%; height: 200px; font-family: monospace; font-size: 14px; margin-top: 10px; }
-    button { margin-top: 10px; margin-right: 10px; padding: 10px 15px; font-size: 16px; }
+    body { font-family: sans-serif; margin: 20px; }
+    canvas { display: none; }
   </style>
 </head>
 <body>
+  <h1>Convertir PDF de 4x8 a 4x6 pulgadas</h1>
+  <input type="file" id="pdfFile" accept="application/pdf" />
+  <button id="btnProcesar">Procesar PDF</button>
+  <a id="descargar" style="display:none;" download="pdf-4x6.pdf">Descargar PDF 4x6</a>
 
-<h1>Convertir ZPL de 4x8 a 4x6</h1>
+  <script>
+    const DPI = 300;
+    const PULGADA = 72; // 1 pulgada en puntos PDF-lib
+    const widthInPoints = 4 * PULGADA;
+    const heightInPoints = 6 * PULGADA;
 
-<textarea id="inputZPL" placeholder="Pega aquí el código ZPL 4x8..."></textarea>
-<br/>
-<button id="btnConvertir">Convertir a 4x6</button>
-<button id="btnCopiar" disabled>Copiar código convertido</button>
+    document.getElementById("btnProcesar").addEventListener("click", async () => {
+      const file = document.getElementById("pdfFile").files[0];
+      if (!file) return alert("Sube un archivo PDF primero.");
 
-<textarea id="outputZPL" placeholder="Aquí verás el código convertido a 4x6..." readonly></textarea>
+      const arrayBuffer = await file.arrayBuffer();
+      const pdfjsLib = window['pdfjs-dist/build/pdf'];
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
 
-<script>
-// Función para escalar etiquetas ZPL de 4x8 pulgadas a 4x6 pulgadas
-function convertZPL4x8To4x6(originalZPL) {
-    // Definir el factor de escala (relación entre 4x6 y 4x8)
-    const scaleFactor = 0.75; // 6/8 = 0.75
-    
-    // Procesar cada línea del ZPL
-    return originalZPL.split('\n').map(line => {
-        // Saltar líneas que no necesitan procesamiento
-        if (!line.startsWith('^FO') && !line.startsWith('^LH') && !line.startsWith('^A0N') && !line.startsWith('^BY') && !line.startsWith('^BC') && !line.startsWith('^BQ')) {
-            return line;
-        }
-        
-        // Procesar comandos FO (Field Origin)
-        if (line.startsWith('^FO')) {
-            const parts = line.split('^');
-            const foPart = parts.find(p => p.startsWith('FO'));
-            if (!foPart) return line;
-            
-            const coordinates = foPart.substring(2).split(',');
-            if (coordinates.length < 2) return line;
-            
-            // Escalar coordenadas X e Y
-            const scaledX = Math.round(parseInt(coordinates[0]) * scaleFactor);
-            const scaledY = Math.round(parseInt(coordinates[1]) * scaleFactor);
-            
-            // Reemplazar coordenadas originales con escaladas
-            const newFoPart = `FO${scaledX},${scaledY}`;
-            
-            // Reconstruir la línea manteniendo otros comandos
-            return parts.map(p => p.startsWith('FO') ? newFoPart : p).join('^');
-        }
-        
-        // Procesar comandos LH (Label Home)
-        if (line.startsWith('^LH')) {
-            const parts = line.substring(3).split(',');
-            if (parts.length < 2) return line;
-            
-            const scaledX = Math.round(parseInt(parts[0]) * scaleFactor);
-            const scaledY = Math.round(parseInt(parts[1]) * scaleFactor);
-            
-            return `^LH${scaledX},${scaledY}` + (parts[2] ? `,${parts[2]}` : '');
-        }
-        
-        // Procesar comandos A0N (Font)
-        if (line.startsWith('^A0N')) {
-            const parts = line.split(',');
-            if (parts.length < 3) return line;
-            
-            // Escalar tamaños de fuente
-            const size1 = Math.round(parseInt(parts[1]) * scaleFactor);
-            const size2 = parts[2] ? Math.round(parseInt(parts[2]) * scaleFactor) : size1;
-            
-            return `${parts[0]},${size1},${size2}` + (parts[3] ? `,${parts.slice(3).join(',')}` : '');
-        }
-        
-        // Procesar comandos BY (Barcode Field Default)
-        if (line.startsWith('^BY')) {
-            const parts = line.substring(3).split(',');
-            if (parts.length < 3) return line;
-            
-            // Escalar parámetros del código de barras
-            const scaledWidth = Math.round(parseInt(parts[0]) * scaleFactor);
-            const scaledRatio = parts[1] ? parseFloat(parts[1]) : 3; // Mantener ratio
-            const scaledHeight = parts[2] ? Math.round(parseInt(parts[2]) * scaleFactor) : Math.round(10 * scaleFactor);
-            
-            return `^BY${scaledWidth},${scaledRatio},${scaledHeight}` + (parts[3] ? `,${parts.slice(3).join(',')}` : '');
-        }
-        
-        // Procesar comandos BC/BQ (Barcode)
-        if (line.startsWith('^BC') || line.startsWith('^BQ')) {
-            const parts = line.split(',');
-            if (parts.length < 2) return line;
-            
-            // Escalar altura del código de barras si está presente
-            if (parts[1] && !isNaN(parseInt(parts[1]))) {
-                const scaledHeight = Math.round(parseInt(parts[1]) * scaleFactor);
-                parts[1] = scaledHeight.toString();
-            }
-            
-            return parts.join(',');
-        }
-        
-        return line;
-    }).join('\n');
-}
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
 
-// Función para procesar múltiples códigos ZPL en una sola consulta
-function processMultipleZPLs(inputZPLs) {
-    // Separar los códigos ZPL individuales (asumiendo que están separados por ^XZ seguido de ^XA)
-    const zplArray = inputZPLs.split(/(?=\^XA)/g);
-    
-    // Procesar cada código ZPL individualmente
-    return zplArray.map(zpl => {
-        // Asegurarse de que el ZPL termina con ^XZ
-        const trimmedZPL = zpl.trim();
-        if (!trimmedZPL.endsWith('^XZ')) {
-            return convertZPL4x8To4x6(trimmedZPL + '^XZ');
-        }
-        return convertZPL4x8To4x6(trimmedZPL);
-    }).join('\n');
-}
+      const pdfDoc = await PDFLib.PDFDocument.create();
 
+      for (let i = 0; i < pdf.numPages; i++) {
+        const page = await pdf.getPage(i + 1);
+        const viewport = page.getViewport({ scale: 2 }); // Escalar para buena calidad
 
-  document.getElementById('btnConvertir').addEventListener('click', () => {
-    const entrada = document.getElementById('inputZPL').value.trim();
-    if (!entrada) return;
+        // Crear canvas temporal para renderizar la página
+        const canvas = document.createElement("canvas");
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        const context = canvas.getContext("2d");
 
-    const salida = processMultipleZPLs(entrada);
-    document.getElementById('outputZPL').value = salida;
-    document.getElementById('btnCopiar').disabled = false;
-  });
+        await page.render({ canvasContext: context, viewport }).promise;
 
-  document.getElementById('btnCopiar').addEventListener('click', () => {
-    const output = document.getElementById('outputZPL');
-    output.select();
-    document.execCommand('copy');
-    alert("Código convertido copiado al portapapeles.");
-  });
-</script>
+        // Convertir canvas a PNG
+        const blob = await new Promise(res => canvas.toBlob(res, "image/png"));
+        const imgBytes = await blob.arrayBuffer();
 
+        const imgEmbed = await pdfDoc.embedPng(imgBytes);
+        const scaledDims = imgEmbed.scaleToFit(widthInPoints, heightInPoints);
+
+        const newPage = pdfDoc.addPage([widthInPoints, heightInPoints]);
+        newPage.drawImage(imgEmbed, {
+          x: (widthInPoints - scaledDims.width) / 2,
+          y: (heightInPoints - scaledDims.height) / 2,
+          width: scaledDims.width,
+          height: scaledDims.height,
+        });
+      }
+
+      const pdfBytes = await pdfDoc.save();
+      const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+
+      const link = document.getElementById("descargar");
+      link.href = url;
+      link.style.display = "inline-block";
+      link.textContent = "Descargar PDF 4x6";
+    });
+  </script>
 </body>
 </html>
