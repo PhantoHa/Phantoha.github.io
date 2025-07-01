@@ -3,19 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Generador de Etiquetas ZPL</title>
+  <title>Convertir ZPL de 4x8 a 4x6</title>
   <style>
     body { font-family: Arial, sans-serif; margin: 1rem; }
     textarea { width: 100%; height: 200px; font-family: monospace; font-size: 14px; margin-top: 10px; }
     button { margin-top: 10px; margin-right: 10px; padding: 10px 15px; font-size: 16px; }
-    #labelViewer { max-width: 100%; height: auto; border: 1px solid #ccc; margin-top: 15px; display: none; }
-    .loading { display: inline-block; margin-left: 10px; }
-    .error { color: red; margin-top: 10px; }
   </style>
 </head>
 <body>
 
-<h1>Generador de Etiquetas ZPL (via Labelary API)</h1>
+<h1>Convertir ZPL de 4x8 a 4x6</h1>
 
 <textarea id="inputZPL" placeholder="Pega aquí el código ZPL 4x8..."></textarea>
 <br/>
@@ -26,28 +23,38 @@
 
 <script>
   function convertirZPL4x8a4x6(zpl) {
-    const escalaY = 6 / 8;
+    const escalaY = 0.65;
 
+    // Escalar coordenadas Y en ^FOx,y
     zpl = zpl.replace(/\^FO(\d+),(\d+)/g, (_, x, y) => {
       const nuevoY = Math.round(parseInt(y) * escalaY);
       return `^FO${x},${nuevoY}`;
     });
 
+    // Escalar fuente en ^A0N,w,h
     zpl = zpl.replace(/\^A0N,(\d+),(\d+)/g, (_, w, h) => {
       const nuevoW = Math.round(parseInt(w) * escalaY);
       const nuevoH = Math.round(parseInt(h) * escalaY);
       return `^A0N,${nuevoW},${nuevoH}`;
     });
 
+    // Escalar ancho de ^FB
     zpl = zpl.replace(/\^FB(\d+),/g, (_, ancho) => {
       const nuevoAncho = Math.round(parseInt(ancho) * escalaY);
       return `^FB${nuevoAncho},`;
     });
 
+    // Escalar altura y grosor de rectángulos ^GBw,h,t
     zpl = zpl.replace(/\^GB(\d+),(\d+),(\d+)/g, (_, w, h, t) => {
       const nuevoH = Math.round(parseInt(h) * escalaY);
       const nuevoT = Math.max(1, Math.round(parseInt(t) * escalaY));
       return `^GB${w},${nuevoH},${nuevoT}`;
+    });
+
+    // Reducir el margen superior en ^LHx,y
+    zpl = zpl.replace(/\^LH(\d+),(\d+)/g, (_, x, y) => {
+      const nuevoY = Math.max(0, Math.round(parseInt(y) * 0.5)); // Reduce más el margen
+      return `^LH${x},${nuevoY}`;
     });
 
     return zpl;
@@ -65,7 +72,6 @@
   document.getElementById('btnCopiar').addEventListener('click', () => {
     const output = document.getElementById('outputZPL');
     output.select();
-    output.setSelectionRange(0, 99999); // para dispositivos móviles
     document.execCommand('copy');
     alert("Código convertido copiado al portapapeles.");
   });
