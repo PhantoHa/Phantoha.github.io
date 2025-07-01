@@ -23,76 +23,105 @@
 
 <script>
 // Función para escalar etiquetas ZPL de 4x8 pulgadas a 4x6 pulgadas
-function escalarZPL(zpl) {
-  const escalaX = 1.0;       // No se escala en X
-  const escalaY = 0.75;      // Escalado vertical para pasar de 8 a 6 pulgadas
-  const nuevoLH = 67;        // Margen LH ajustado manualmente
+function convertZPL4x8To4x6(originalZPL) {
+    // Definir el factor de escala (relación entre 4x6 y 4x8)
+    const scaleFactor = 0.75; // 6/8 = 0.75
+    
+    // Procesar cada línea del ZPL
+    return originalZPL.split('\n').map(line => {
+        // Saltar líneas que no necesitan procesamiento
+        if (!line.startsWith('^FO') && !line.startsWith('^LH') && !line.startsWith('^A0N') && !line.startsWith('^BY') && !line.startsWith('^BC') && !line.startsWith('^BQ')) {
+            return line;
+        }
+        
+        // Procesar comandos FO (Field Origin)
+        if (line.startsWith('^FO')) {
+            const parts = line.split('^');
+            const foPart = parts.find(p => p.startsWith('FO'));
+            if (!foPart) return line;
+            
+            const coordinates = foPart.substring(2).split(',');
+            if (coordinates.length < 2) return line;
+            
+            // Escalar coordenadas X e Y
+            const scaledX = Math.round(parseInt(coordinates[0]) * scaleFactor);
+            const scaledY = Math.round(parseInt(coordinates[1]) * scaleFactor);
+            
+            // Reemplazar coordenadas originales con escaladas
+            const newFoPart = `FO${scaledX},${scaledY}`;
+            
+            // Reconstruir la línea manteniendo otros comandos
+            return parts.map(p => p.startsWith('FO') ? newFoPart : p).join('^');
+        }
+        
+        // Procesar comandos LH (Label Home)
+        if (line.startsWith('^LH')) {
+            const parts = line.substring(3).split(',');
+            if (parts.length < 2) return line;
+            
+            const scaledX = Math.round(parseInt(parts[0]) * scaleFactor);
+            const scaledY = Math.round(parseInt(parts[1]) * scaleFactor);
+            
+            return `^LH${scaledX},${scaledY}` + (parts[2] ? `,${parts[2]}` : '');
+        }
+        
+        // Procesar comandos A0N (Font)
+        if (line.startsWith('^A0N')) {
+            const parts = line.split(',');
+            if (parts.length < 3) return line;
+            
+            // Escalar tamaños de fuente
+            const size1 = Math.round(parseInt(parts[1]) * scaleFactor);
+            const size2 = parts[2] ? Math.round(parseInt(parts[2]) * scaleFactor) : size1;
+            
+            return `${parts[0]},${size1},${size2}` + (parts[3] ? `,${parts.slice(3).join(',')}` : '');
+        }
+        
+        // Procesar comandos BY (Barcode Field Default)
+        if (line.startsWith('^BY')) {
+            const parts = line.substring(3).split(',');
+            if (parts.length < 3) return line;
+            
+            // Escalar parámetros del código de barras
+            const scaledWidth = Math.round(parseInt(parts[0]) * scaleFactor);
+            const scaledRatio = parts[1] ? parseFloat(parts[1]) : 3; // Mantener ratio
+            const scaledHeight = parts[2] ? Math.round(parseInt(parts[2]) * scaleFactor) : Math.round(10 * scaleFactor);
+            
+            return `^BY${scaledWidth},${scaledRatio},${scaledHeight}` + (parts[3] ? `,${parts.slice(3).join(',')}` : '');
+        }
+        
+        // Procesar comandos BC/BQ (Barcode)
+        if (line.startsWith('^BC') || line.startsWith('^BQ')) {
+            const parts = line.split(',');
+            if (parts.length < 2) return line;
+            
+            // Escalar altura del código de barras si está presente
+            if (parts[1] && !isNaN(parseInt(parts[1]))) {
+                const scaledHeight = Math.round(parseInt(parts[1]) * scaleFactor);
+                parts[1] = scaledHeight.toString();
+            }
+            
+            return parts.join(',');
+        }
+        
+        return line;
+    }).join('\n');
+}
 
-  // Ajustar el margen ^LH
-  zpl = zpl.replace(/^(\^LH)(\d+),(\d+)/m, (_, cmd, x, y) => {
-    return `^LH${x},${nuevoLH}`;
-  });
-
-  // Escalar coordenadas de ^FO
-  zpl = zpl.replace(/\^FO(\d+),(\d+)/g, (_, x, y) => {
-    const nuevoX = Math.round(parseInt(x) * escalaX);
-    const nuevoY = Math.round(parseInt(y) * escalaY);
-    return `^FO${nuevoX},${nuevoY}`;
-  });
-
-  // Escalar tamaños de fuente ^A0N,h,w con escala adaptativa
-  zpl = zpl.replace(/\^A0N,(\d+),(\d+)/g, (_, h, w) => {
-    let nuevoH = parseInt(h);
-    let nuevoW = parseInt(w);
-
-    if (nuevoH > 60) {
-      nuevoH = Math.round(nuevoH * 0.86); // Ejemplo: 70 → 60 aprox
-      nuevoW = Math.round(nuevoW * 0.86);
-    } else if (nuevoH > 30) {
-      nuevoH = Math.round(nuevoH * 0.88);
-      nuevoW = Math.round(nuevoW * 0.88);
-    } else {
-      nuevoH = Math.round(nuevoH * 0.92);
-      nuevoW = Math.round(nuevoW * 0.92);
-    }
-
-    // Evitar tamaños muy pequeños
-    nuevoH = Math.max(16, nuevoH);
-    nuevoW = Math.max(16, nuevoW);
-
-    return `^A0N,${nuevoH},${nuevoW}`;
-  });
-
-  // Escalar ^FB (ancho caja de texto)
-  zpl = zpl.replace(/\^FB(\d+),(\d+),(-?\d+),([LRJ]),?/g, (_, w, l, s, a) => {
-    const nuevoW = Math.round(parseInt(w) * escalaX);
-    return `^FB${nuevoW},${l},${s},${a}`;
-  });
-
-  // Escalar gráficos de caja ^GB (ancho, alto, grosor)
-  zpl = zpl.replace(/\^GB(\d+),(\d+),(\d+)/g, (_, w, h, t) => {
-    const nuevoW = Math.round(parseInt(w) * escalaX);
-    const nuevoH = Math.round(parseInt(h) * escalaY);
-
-    // Mantener grosor mínimo 3 si original >= 3, sino escalar
-    let nuevoT = parseInt(t);
-    if (nuevoT >= 3) {
-      nuevoT = 3;
-    } else {
-      nuevoT = Math.max(1, Math.round(nuevoT * escalaY));
-    }
-
-    return `^GB${nuevoW},${nuevoH},${nuevoT}`;
-  });
-
-  // Escalar código de barras ^BY solo el alto (con escala menos agresiva)
-  zpl = zpl.replace(/\^BY(\d+),(\d+),(\d+)/g, (_, m, r, h) => {
-    const escalaBarra = 0.75; // Escala fija para barras
-    const nuevaH = Math.round(parseInt(h) * escalaBarra);
-    return `^BY${m},${r},${nuevaH}`;
-  });
-
-  return zpl;
+// Función para procesar múltiples códigos ZPL en una sola consulta
+function processMultipleZPLs(inputZPLs) {
+    // Separar los códigos ZPL individuales (asumiendo que están separados por ^XZ seguido de ^XA)
+    const zplArray = inputZPLs.split(/(?=\^XA)/g);
+    
+    // Procesar cada código ZPL individualmente
+    return zplArray.map(zpl => {
+        // Asegurarse de que el ZPL termina con ^XZ
+        const trimmedZPL = zpl.trim();
+        if (!trimmedZPL.endsWith('^XZ')) {
+            return convertZPL4x8To4x6(trimmedZPL + '^XZ');
+        }
+        return convertZPL4x8To4x6(trimmedZPL);
+    }).join('\n');
 }
 
 
@@ -100,7 +129,7 @@ function escalarZPL(zpl) {
     const entrada = document.getElementById('inputZPL').value.trim();
     if (!entrada) return;
 
-    const salida = escalarZPL(entrada);
+    const salida = processMultipleZPLs(entrada);
     document.getElementById('outputZPL').value = salida;
     document.getElementById('btnCopiar').disabled = false;
   });
