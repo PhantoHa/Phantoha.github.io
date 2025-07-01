@@ -30,11 +30,21 @@
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: zpl
       });
-
-      if (!response.ok) throw new Error("Error al comunicarse con Labelary");
-
-      return await response.blob(); // PDF blob
+    
+      const contentType = response.headers.get("Content-Type");
+    
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Error de Labelary: ${errorText}`);
+      }
+    
+      if (!contentType.includes("application/pdf")) {
+        throw new Error("La respuesta no es un PDF. ¿ZPL inválido?");
+      }
+    
+      return await response.blob(); // PDF blob válido
     }
+
 
     async function convertirPDFa4x6(blobPDF) {
       const arrayBuffer = await blobPDF.arrayBuffer();
@@ -87,7 +97,7 @@
         link.textContent = "Descargar PDF 4x6";
       } catch (err) {
         console.error(err);
-        alert("Ocurrió un error: " + err.message);
+        alert("Ocurrió un error: " + err.message);        
       }
     });
   </script>
