@@ -1,98 +1,74 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Generador de Etiquetas ZPL</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 1rem; }
-    textarea { width: 100%; height: 200px; font-family: monospace; font-size: 14px; }
-    button { margin-top: 10px; margin-right: 10px; padding: 10px 15px; font-size: 16px; }
-    #labelViewer { max-width: 100%; height: auto; border: 1px solid #ccc; margin-top: 15px; display: none; }
-    .loading { display: inline-block; margin-left: 10px; }
-    .error { color: red; margin-top: 10px; }
-  </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Generador de Etiquetas ZPL</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 1rem; }
+    textarea { width: 100%; height: 200px; font-family: monospace; font-size: 14px; margin-top: 10px; }
+    button { margin-top: 10px; margin-right: 10px; padding: 10px 15px; font-size: 16px; }
+    #labelViewer { max-width: 100%; height: auto; border: 1px solid #ccc; margin-top: 15px; display: none; }
+    .loading { display: inline-block; margin-left: 10px; }
+    .error { color: red; margin-top: 10px; }
+  </style>
 </head>
 <body>
 
 <h1>Generador de Etiquetas ZPL (via Labelary API)</h1>
 
-<textarea id="inputZPL" placeholder="Pega aquí el código ZPL"></textarea>
-
+<textarea id="inputZPL" placeholder="Pega aquí el código ZPL 4x8..."></textarea>
 <br/>
+<button id="btnConvertir">Convertir a 4x6</button>
+<button id="btnCopiar" disabled>Copiar código convertido</button>
 
-<button id="btnGenerar">Procesar y mostrar Etiqueta</button>
-<button id="btnDescargar" disabled>Descargar Etiqueta (PNG)</button>
-<span id="loading" class="loading" style="display:none;">Procesando...</span>
-<div id="error" class="error"></div>
-
-<img id="labelViewer" alt="Etiqueta ZPL Renderizada">
+<textarea id="outputZPL" placeholder="Aquí verás el código convertido a 4x6..." readonly></textarea>
 
 <script>
-  let imageUrl = null;
-  const LABELARY_API_URL = 'https://api.labelary.com/v1/printers/8dpmm/labels/4x6/'; 
+  function convertirZPL4x8a4x6(zpl) {
+    const escalaY = 6 / 8;
 
-  document.getElementById('btnGenerar').addEventListener('click', async () => {
-    const zplCode = document.getElementById('inputZPL').value.trim();
-    if (!zplCode) {
-      document.getElementById('error').textContent = 'Por favor ingresa el código ZPL';
-      return;
-    }
+    zpl = zpl.replace(/\^FO(\d+),(\d+)/g, (_, x, y) => {
+      const nuevoY = Math.round(parseInt(y) * escalaY);
+      return `^FO${x},${nuevoY}`;
+    });
 
-    document.getElementById('error').textContent = '';
-    document.getElementById('loading').style.display = 'inline-block';
-    document.getElementById('btnGenerar').disabled = true;
-    document.getElementById('labelViewer').style.display = 'none';
-    document.getElementById('btnDescargar').disabled = true;
+    zpl = zpl.replace(/\^A0N,(\d+),(\d+)/g, (_, w, h) => {
+      const nuevoW = Math.round(parseInt(w) * escalaY);
+      const nuevoH = Math.round(parseInt(h) * escalaY);
+      return `^A0N,${nuevoW},${nuevoH}`;
+    });
 
-    try {
-        // Preparar los datos como x-www-form-urlencoded
-        // El contenido ZPL va como valor de un parámetro llamado 'zpl' (verificado con la doc de Labelary)
-        const params = new URLSearchParams();
-        params.append('zpl', zplCode); // Agregamos el ZPL bajo el nombre de parámetro 'zpl'
+    zpl = zpl.replace(/\^FB(\d+),/g, (_, ancho) => {
+      const nuevoAncho = Math.round(parseInt(ancho) * escalaY);
+      return `^FB${nuevoAncho},`;
+    });
 
-      const response = await fetch(LABELARY_API_URL, {
-        method: 'POST',
-        headers: {
-          // ¡CAMBIO AQUÍ! Nuevo Content-Type esperado por Labelary
-          'Content-Type': 'application/x-www-form-urlencoded', 
-          'Accept': 'image/png' 
-        },
-        body: params.toString(), // Enviamos los parámetros como string url-encoded
-      });
+    zpl = zpl.replace(/\^GB(\d+),(\d+),(\d+)/g, (_, w, h, t) => {
+      const nuevoH = Math.round(parseInt(h) * escalaY);
+      const nuevoT = Math.max(1, Math.round(parseInt(t) * escalaY));
+      return `^GB${w},${nuevoH},${nuevoT}`;
+    });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Error en el servicio de Labelary: ${response.status} - ${errorText}`);
-      }
+    return zpl;
+  }
 
-      const imageBlob = await response.blob();
-      imageUrl = URL.createObjectURL(imageBlob);
-      
-      const labelViewer = document.getElementById('labelViewer');
-      labelViewer.src = imageUrl;
-      labelViewer.style.display = 'block';
-      document.getElementById('btnDescargar').disabled = false;
-      
-    } catch (error) {
-      console.error(error);
-      document.getElementById('error').textContent = 'Error al procesar el código ZPL: ' + error.message;
-    } finally {
-      document.getElementById('loading').style.display = 'none';
-      document.getElementById('btnGenerar').disabled = false;
-    }
-  });
+  document.getElementById('btnConvertir').addEventListener('click', () => {
+    const entrada = document.getElementById('inputZPL').value.trim();
+    if (!entrada) return;
 
-  document.getElementById('btnDescargar').addEventListener('click', () => {
-    if (!imageUrl) return;
-    
-    const a = document.createElement('a');
-    a.href = imageUrl;
-    a.download = 'etiqueta.png';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  });
+    const salida = convertirZPL4x8a4x6(entrada);
+    document.getElementById('outputZPL').value = salida;
+    document.getElementById('btnCopiar').disabled = false;
+  });
+
+  document.getElementById('btnCopiar').addEventListener('click', () => {
+    const output = document.getElementById('outputZPL');
+    output.select();
+    output.setSelectionRange(0, 99999); // para dispositivos móviles
+    document.execCommand('copy');
+    alert("Código convertido copiado al portapapeles.");
+  });
 </script>
 
 </body>
