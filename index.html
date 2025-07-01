@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Generador de Etiquetas ZPL</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
@@ -10,188 +10,124 @@
     textarea { width: 100%; height: 200px; font-family: monospace; font-size: 14px; }
     button { margin-top: 10px; margin-right: 10px; padding: 10px 15px; font-size: 16px; }
     #pdfViewer { width: 100%; height: 500px; border: 1px solid #ccc; margin-top: 15px; }
-    .label-container { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px; }
-    .label-preview { border: 1px solid #ddd; padding: 5px; }
     .loading { display: inline-block; margin-left: 10px; }
+    .error { color: red; margin-top: 10px; }
   </style>
 </head>
 <body>
 
 <h1>Generador de Etiquetas ZPL</h1>
 
-<textarea id="inputZPL" placeholder="Pega aquí el código ZPL o XML">^XA
-^MCY
-^CI28
-^LH0,90
-^FO30,40^A0N,28,28^FH^FDPack ID:^FS
-^FO31,40^A0N,28,28^FH^FDPack ID:^FS
-^FO134,39^A0N,25,25^FD20000^FS
-^FO198,40^A0N,30,30^FD08343319593^FS
-^FO199,40^A0N,30,30^FD08343319593^FS
-^FO450,30^A0N,20,20^FB330,2,0,L^FH^FDRecortá esta parte de la etiqueta para que tu paquete viaje seguro.^FS
-^FO0,90^GB810,2,1^FS
-^FO10,130^A0N,70,70^FB160,1,0,C^FD1^FS
-^FO10,210^A0N,25,25^FB150,1,0,C^FDUnidad^FS
-^FO150,100^GB30,30,3^FS
-^FO200,100^A0N,27,27^FB570,3,-1^FH^FDAuriculares Bluetooth In Ear Tws Stromberg Dual_2Dpro Color Negro^FS
-^FO200,181^A0N,24,24^FB570,3,-1^FH^FDSKU: 10208^FS
-^FO10,265^GFA,935,935,11,,::::::::::::::::::::::K07C,K0FF,J01C38,J0181CL03FC,J0180CK01FF,J0180EK03FE,J01806K0FF8,J01C06J03FE,K0F0EJ07F8,K07FEI01FF,K01FEI03FC,L07F800FF,L01FC03FE,M07F07F8,M01F9FE,N067F8,O0FF,N03FC,N0FF18,M01FC7E,M07F87F,L01FE03FC,L03FC00FF,L0F0C007FC,K03C0C001FE,K0780CI07F8,J01E00CI03FE,J03801CJ0FF,J030018J07FC,J070078J01FF,J0300FL0FFC,J0383EL03F,J01FF8,K0FE,,:::::::::::::::::::::::::::^FS
-^FO50,304^GB750,1,1^FS
-^LH0,410^FO20,10^GFA,800,800,10,,:::::::::::O0FF,M07JFE,L07FC003FE,K07EL07E,J01EN078,J07P0E,I01CP038,I07R0E,001CK01FK038,003L0IFK0C,0078J03803CJ0E,0187J06I07I01D8,0300F00F8J0FEFE0C,02003IFK01J06,04I01C6P02,08K0401FM01,1L08060CM083K0100C02M0C2M01001M046K0306I0CL064K0198I02L024Q01L02CR08K03CR04K03FR02K03FFQ01J07!C1FQ0C007E3C03EP0203F03C0078O010F003CI0EF1N0F8003CI070C4M06I03CI02003CL02I03CI02P02I036I03N0106I066I01J08J0C4I067J0EI08J078I0E38I03I0E00406I01C3CI01800100204I01C3CJ0FI080118I03C1EJ03800801FJ0780FK0C008018J0F,078J07C0823J01F,07EJ01C1C36J07E,03FK031C3K0FC,01FCJ01E18J01F8,00FER07F,007F8P01FE,003FFP0FFC,I0FFEN07FF,I03FFCL03FFC,J0IFCJ03IF,J07PFE,K0PF,K01NF8,L01LF8,N0JF,,:::::::::::^FS
-^FO120,20^A0N,24,24^FH^FDRemitente #468066938^FS
-^FO120,43^A0N,24,24^FB550,2,0,L^FH^FDRam_C3_B3n Carrillo y Avenida Boulogne Sur Mer S/N, Villa Celina^FS
-^FO120,90^A0N,24,24^FB550,1,0,L^FH^FDLa Matanza, Buenos Aires - 1772^FS
-^FO120,120^A0N,24,24^FDPack ID: 20000^FS
-^FO272,117^A0N,27,27^FD08343319593^FS
-^FX LAST CLUSTER  ^FS
-^FO20,150^GB210,45,45^FS
-^FO20,156^A0N,45,45^FB210,1,0,C^FR^FDFBA01^FS
-^FX END LAST CLUSTER  ^FS
-^FO280,150^GB520,45,3^FS
-^FO300,163^A0N,27,27^FB480,1,0,C^FR^FH^FDDespachar: lunes
- 30/jun^FS
-^FX  Shipment_Number_Bar_Code  ^FS
-^FO230,210^BY3,,1^BCN,160,N,N,N^FD>:45092255805^FS
-^FO95,385^A0N,30,30^FB390,1,0,R^FD450922^FS
-^FO488,381^A0N,35,35^FB400,1,0,L^FD55805^FS
-^FX  CUSTOM_DATA  ^FS
-^FO0,580^A0N,175,175^FB630,1,0,R^FDSMQ1^FS
-^FO670,640^A0N,47,47^FB200,1,0,L^FD02:00^FS
-^FO0,790^A0N,28,28^FB533,1,0,R^FDFBA01 > SMQ1 > ^FS
-^FO538,785^A0N,40,40^FDMDQ_1^FS
-^FO0,830^A0N,38,38^FB820,1,0,C^FDMAR 01/07/2025   CP: 7609^FS
-^FO0,950^GB850,2,2^FS
-^FO30,970^A0N,26,26^FB600,2,0,L^FH^FDMaria Celeste Durbano (CELESTEDURBANO)^FS
-^FO30,1030^A0N,26,26^FB600,2,0,L^FH^FDDomicilio: Calle de La Merced 439^FS
-^FO30,1090^A0N,30,30^FH^FDCP: 7609^FS
-^FO30,1089^A0N,30,30^FH^FDCP: 7609^FS
-^FO30,1121^A0N,26,26^FB600,1,0,L^FH^FDCiudad de destino: Mar De Cobo (Buenos Aires)^FS
-^FO30,1150^A0N,26,26^FB600,3,0,L^FH^FDReferencia: kiosco Referencia: kiosco Entre: avenida manuel cobo y del temple^FS
-^FO650,985^BY2,2,1^BQN,2,5^FDLA,{"id":"45092255805","t":"lm"}^FS
-^FO650,1140^GB105,40,40^FS
-^FO650,1145^A0N,35,35^FB105,1,0,C^FR^FDC^FS
-^XZ</textarea>
+<textarea id="inputZPL" placeholder="Pega aquí el código ZPL"></textarea>
 
 <br/>
 
 <button id="btnGenerar">Procesar y mostrar PDF</button>
 <button id="btnDescargar" disabled>Descargar PDF</button>
 <span id="loading" class="loading" style="display:none;">Procesando...</span>
+<div id="error" class="error"></div>
 
-<div id="labelContainer" class="label-container"></div>
 <iframe id="pdfViewer"></iframe>
 
 <script>
   const { jsPDF } = window.jspdf;
-  let pdfDoc = null; // guardamos el pdf generado
   let pdfBlobUrl = null;
 
-  // Función para convertir ZPL a PDF usando el servicio Labelary
-  async function zplToPdf(zplCode, dpmm = 8, width = 4, height = 6) {
-    const loadingElement = document.getElementById('loading');
-    loadingElement.style.display = 'inline-block';
-    
-    try {
-      // Dividir en múltiples etiquetas si hay múltiples ^XA...^XZ
-      const labels = zplCode.split(/^XA/m).filter(part => part.trim().length > 0);
+  // Función para simular el renderizado de ZPL (versión simplificada)
+  function renderZPLToPDF(zplCode) {
+    return new Promise((resolve) => {
+      // Crear documento PDF (4x6 pulgadas = 288x432 puntos)
+      const pdfDoc = new jsPDF({
+        orientation: "portrait",
+        unit: "pt",
+        format: [288, 432],
+      });
+
+      // Configuración de dibujo
+      const margin = 20;
+      let yPosition = margin;
+      const lineHeight = 14;
+      const maxWidth = 288 - 2 * margin;
+
+      // Procesar comandos ZPL básicos (implementación simplificada)
+      const commands = zplCode.split('\n');
       
-      const pdfs = [];
-      
-      for (let i = 0; i < labels.length; i++) {
-        const fullZpl = `^XA${labels[i]}`.trim();
-        
-        // Usar el servicio Labelary para convertir ZPL a PDF
-        const response = await fetch('http://api.labelary.com/v1/printers/' + dpmm + 'dpmm/labels/' + width + 'x' + height + '/0/', {
-          method: 'POST',
-          headers: {
-            'Accept': 'application/pdf', // Solicitar PDF directamente
-            'Content-Type': 'application/x-www-form-urlencoded'
-          },
-          body: fullZpl
-        });
-        
-        if (!response.ok) {
-          throw new Error('Error en el servicio Labelary: ' + response.statusText);
+      commands.forEach(command => {
+        if (command.startsWith('^FO')) {
+          // Posicionamiento: ^FOx,y
+          const coords = command.match(/^FO(\d+),(\d+)/);
+          if (coords) {
+            yPosition = margin + parseInt(coords[2]) / 3; // Ajuste de escala
+          }
+        } 
+        else if (command.startsWith('^A0')) {
+          // Fuente: ^A0N,height,width
+          const fontMatch = command.match(/^A0N,(\d+),(\d+)/);
+          if (fontMatch) {
+            pdfDoc.setFontSize(parseInt(fontMatch[1]) / 2); // Ajuste de tamaño
+          }
         }
-        
-        const pdfBlob = await response.blob();
-        pdfs.push(pdfBlob);
-      }
-      
-      return pdfs;
-    } catch (error) {
-      console.error("Error procesando ZPL:", error);
-      throw error;
-    } finally {
-      loadingElement.style.display = 'none';
-    }
+        else if (command.startsWith('^FD')) {
+          // Texto: ^FDtexto^FS
+          const textMatch = command.match(/^FD([^^]+)/);
+          if (textMatch) {
+            const text = textMatch[1].replace(/_2D/g, '-').replace(/_C3_B3n/g, 'ó');
+            const lines = pdfDoc.splitTextToSize(text, maxWidth);
+            pdfDoc.text(lines, margin, yPosition);
+            yPosition += lines.length * lineHeight;
+          }
+        }
+        else if (command.startsWith('^GB')) {
+          // Caja: ^GBwidth,height,thickness
+          const boxMatch = command.match(/^GB(\d+),(\d+),(\d+)/);
+          if (boxMatch) {
+            pdfDoc.rect(margin, yPosition, parseInt(boxMatch[1]) / 3, parseInt(boxMatch[2]) / 3);
+            yPosition += parseInt(boxMatch[2]) / 3 + 5;
+          }
+        }
+      });
+
+      // Agregar borde de etiqueta
+      pdfDoc.rect(5, 5, 278, 422);
+
+      // Generar Blob
+      const pdfBlob = pdfDoc.output('blob');
+      resolve(pdfBlob);
+    });
   }
 
   document.getElementById('btnGenerar').addEventListener('click', async () => {
     const zplCode = document.getElementById('inputZPL').value.trim();
     if (!zplCode) {
-      alert('Por favor ingresa el código ZPL');
+      document.getElementById('error').textContent = 'Por favor ingresa el código ZPL';
       return;
     }
 
+    document.getElementById('error').textContent = '';
+    document.getElementById('loading').style.display = 'inline-block';
+    document.getElementById('btnGenerar').disabled = true;
+
     try {
-      // Convertir ZPL a PDF (4x6 pulgadas, 8dpmm)
-      const pdfBlobs = await zplToPdf(zplCode, 8, 4, 6);
+      // Renderizar ZPL a PDF
+      const pdfBlob = await renderZPLToPDF(zplCode);
+      pdfBlobUrl = URL.createObjectURL(pdfBlob);
       
-      // Limpiar contenedor previo
-      const container = document.getElementById('labelContainer');
-      container.innerHTML = '';
-      
-      // Crear un nuevo documento PDF para combinar todas las etiquetas
-      pdfDoc = new jsPDF({
-        orientation: "portrait",
-        unit: "in",
-        format: [4, 6],
-      });
-      
-      // Procesar cada PDF generado
-      for (let i = 0; i < pdfBlobs.length; i++) {
-        const pdfBlob = pdfBlobs[i];
-        const pdfUrl = URL.createObjectURL(pdfBlob);
-        
-        // Mostrar previsualización en el contenedor
-        const iframe = document.createElement('iframe');
-        iframe.src = pdfUrl;
-        iframe.style.width = '200px';
-        iframe.style.height = '300px';
-        
-        const div = document.createElement('div');
-        div.className = 'label-preview';
-        div.innerHTML = `<p>Etiqueta ${i + 1}</p>`;
-        div.appendChild(iframe);
-        container.appendChild(div);
-        
-        // Para el PDF combinado, solo agregamos la primera página de cada etiqueta
-        if (i > 0) {
-          pdfDoc.addPage([4, 6], "portrait");
-        }
-        
-        // Convertir Blob a URL para jsPDF (esto es un poco más complejo)
-        // En este caso, simplemente usaremos el primer PDF para simplificar
-        if (i === 0) {
-          pdfBlobUrl = pdfUrl;
-          document.getElementById('pdfViewer').src = pdfBlobUrl;
-        }
-      }
-      
-      // Habilitar botón descargar
+      // Mostrar PDF en iframe
+      document.getElementById('pdfViewer').src = pdfBlobUrl;
       document.getElementById('btnDescargar').disabled = false;
       
     } catch (error) {
       console.error(error);
-      alert('Error al procesar el código ZPL: ' + error.message);
+      document.getElementById('error').textContent = 'Error al procesar el código ZPL: ' + error.message;
+    } finally {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('btnGenerar').disabled = false;
     }
   });
 
   document.getElementById('btnDescargar').addEventListener('click', () => {
-    if (!pdfBlobUrl) return alert("Primero genera el PDF");
+    if (!pdfBlobUrl) return;
     
-    // Crear un enlace temporal para descargar el PDF
     const a = document.createElement('a');
     a.href = pdfBlobUrl;
     a.download = 'etiqueta.pdf';
